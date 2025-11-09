@@ -154,16 +154,36 @@ router.post('/delete-patient/:id', verifyUser, requireRole('admin'), async (req,
     res.status(500).send('Error deleting patient');
   }
 });
+
 // ========== DOCTOR DASHBOARD ==========
 router.get('/doctor-dashboard', verifyUser, requireRole('doctor'), async (req, res) => {
   try {
-    const patientsSnapshot = await db.collection('patients').get();
+    // Get all patients added by this doctor
+    const patientsSnapshot = await db.collection('patients')
+      .where('addedBy', '==', req.user.uid)
+      .get();
     const patients = patientsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
     res.render('doctor_dashboard', { user: req.user, patients });
   } catch (error) {
     console.error('Error:', error);
     res.status(500).send('Error loading doctor dashboard');
+  }
+});
+
+// Doctor's My Patients page
+router.get('/my-patients', verifyUser, requireRole('doctor'), async (req, res) => {
+  try {
+    // Get only patients added by this doctor
+    const patientsSnapshot = await db.collection('patients')
+      .where('addedBy', '==', req.user.uid)
+      .get();
+    const patients = patientsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    res.render('my_patients', { user: req.user, patients });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Error loading patients');
   }
 });
 
@@ -190,21 +210,30 @@ router.get('/add-patient', verifyUser, requireRole('doctor', 'admin'), (req, res
 
 router.post('/add-patient', verifyUser, requireRole('doctor', 'admin'), async (req, res) => {
   try {
-    const { name, age, condition, notesEncrypted } = req.body;
+    const { name, age, condition, notesEncrypted, pdfLink, pdfType } = req.body;
     
     if (!name || !age || !condition) {
       return res.status(400).send('Missing required fields');
     }
     
-    await db.collection('patients').add({
+    const patientData = {
       name: name.trim(),
       age: parseInt(age),
       condition: condition.trim(),
       notesEncrypted: notesEncrypted || '',
       addedBy: req.user.uid,
       addedByRole: req.user.role,
+      addedByName: req.user.name,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+    };
+
+    // Add PDF information if provided
+    if (pdfLink && pdfLink.trim()) {
+      patientData.pdfLink = pdfLink.trim();
+      patientData.pdfType = pdfType || 'link';
+    }
+    
+    await db.collection('patients').add(patientData);
     
     res.redirect('/dashboard');
   } catch (error) {
@@ -227,6 +256,11 @@ router.get('/patient/:id', verifyUser, async (req, res) => {
     // Patients can only view their own records
     if (req.user.role === 'patient' && patientData.patientUid !== req.user.uid) {
       return res.status(403).send('Access denied');
+    }
+    
+    // Doctors can only view patients they added
+    if (req.user.role === 'doctor' && patientData.addedBy !== req.user.uid) {
+      return res.status(403).send('Access denied - You can only view patients you added');
     }
     
     res.render('patient_view', { 
