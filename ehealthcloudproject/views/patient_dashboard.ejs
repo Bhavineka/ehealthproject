@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Patient Dashboard | eHealth Cloud</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>🏥 eHealth</h2>
+        <span class="role-badge">PATIENT</span>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <a href="/patient-dashboard" class="nav-item active">
+          <span class="icon">📊</span>
+          <span>My Dashboard</span>
+        </a>
+        <a href="/my-records" class="nav-item">
+          <span class="icon">📋</span>
+          <span>Medical Records</span>
+        </a>
+        <a href="/appointments" class="nav-item">
+          <span class="icon">📅</span>
+          <span>Appointments</span>
+        </a>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <button onclick="logout()" class="btn btn-danger" style="width: 100%;">Logout</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="top-bar">
+        <h1>My Health Dashboard</h1>
+        <div class="user-info">
+          <div class="user-avatar"><%= user.name.charAt(0).toUpperCase() %></div>
+          <div>
+            <div style="font-weight: 600;"><%= user.name %></div>
+            <div style="font-size: 12px; color: var(--gray-700);"><%= user.email %></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card blue">
+          <div class="stat-icon">📋</div>
+          <h3>My Records</h3>
+          <div class="stat-value"><%= records.length %></div>
+        </div>
+        
+        <div class="stat-card green">
+          <div class="stat-icon">✅</div>
+          <h3>Completed Visits</h3>
+          <div class="stat-value"><%= records.length %></div>
+        </div>
+        
+        <div class="stat-card orange">
+          <div class="stat-icon">📅</div>
+          <h3>Upcoming</h3>
+          <div class="stat-value">0</div>
+        </div>
+      </div>
+
+      <!-- Medical Records -->
+      <div class="content-card">

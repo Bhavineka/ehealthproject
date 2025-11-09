@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Doctor Dashboard | eHealth Cloud</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>🏥 eHealth</h2>
+        <span class="role-badge">DOCTOR</span>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <a href="/doctor-dashboard" class="nav-item active">
+          <span class="icon">📊</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="/add-patient" class="nav-item">
+          <span class="icon">➕</span>
+          <span>Add Patient</span>
+        </a>
+        <a href="/my-patients" class="nav-item">
+          <span class="icon">👥</span>
+          <span>My Patients</span>
+        </a>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <button onclick="logout()" class="btn btn-danger" style="width: 100%;">Logout</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="top-bar">
+        <h1>Doctor Dashboard</h1>
+        <div class="user-info">
+          <div class="user-avatar"><%= user.name.charAt(0).toUpperCase() %></div>
+          <div>
+            <div style="font-weight: 600;">Dr. <%= user.name %></div>
+            <div style="font-size: 12px; color: var(--gray-700);"><%= user.email %></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card blue">
+          <div class="stat-icon">👥</div>
+          <h3>Total Patients</h3>
+          <div class="stat-value"><%= patients.length %></div>
+        </div>
+        
+        <div class="stat-card green">
+          <div class="stat-icon">📋</div>
+          <h3>Records Today</h3>
+          <div class="stat-value">0</div>
+        </div>
+        
+        <div class="stat-card orange">
+          <div class="stat-icon">⏰</div>
+          <h3>Pending Reviews</h3>
+          <div class="stat-value">0</div>
+        </div>
+      </div>
+
+      <!-- Patients Table -->
+      <div class="content-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="margin: 0;">Patient Records</h2>
+          <a href="/add-patient" class="btn btn-success">+ Add New Patient</a>
+        </div>
+        
+        <% if (patients.length > 0) { %>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Patient Name</th>
+                <th>Age</th>
+                <th>Condition</th>
+                <th>Added On</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% patients.forEach(p => { %>
+                <tr>
+                  <td><strong><%= p.name %></strong></td>
+                  <td><%= p.age %></td>
+                  <td><%= p.condition %></td>
+                  <td><%= p.createdAt ? new Date(p.createdAt.toDate()).toLocaleDateString() : 'N/A' %></td>
+                  <td>
+                    <a href="/patient/<%= p.id %>" class="btn btn-secondary" style="padding: 6px 16px; display: inline-block;">View Details</a>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } else { %>
+          <div style="text-align: center; padding: 60px 20px;">
+            <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
+            <h3 style="color: var(--gray-700); margin-bottom: 8px;">No patients yet</h3>
+            <p style="color: var(--gray-700); margin-bottom: 24px;">Start by adding your first patient record</p>
+            <a href="/add-patient" class="btn btn-primary" style="width: auto; padding: 12px 32px;">Add Patient</a>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="/js/firebase-client-config.js"></script>
+  <script src="/js/auth.js"></script>
+</body>
+</html>
