@@ -72,6 +72,88 @@ router.get('/admin-dashboard', verifyUser, requireRole('admin'), async (req, res
   }
 });
 
+router.get('/manage-doctors', verifyUser, requireRole('admin'), async (req, res) => {
+  try {
+    const doctorsSnapshot = await db.collection('users').where('role', '==', 'doctor').get();
+    const doctors = doctorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    res.render('manage_doctors', { user: req.user, doctors });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Error loading doctors');
+  }
+});
+
+router.post('/add-doctor', verifyUser, requireRole('admin'), async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    
+    if (!name || !email || !password) {
+      return res.status(400).send('Missing required fields');
+    }
+    
+    // Create doctor account in Firebase Auth
+    const userRecord = await admin.auth().createUser({
+      email: email,
+      password: password,
+      displayName: name
+    });
+    
+    // Save doctor info in Firestore
+    await db.collection('users').doc(userRecord.uid).set({
+      name: name,
+      email: email,
+      role: 'doctor',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      addedBy: req.user.uid
+    });
+    
+    res.redirect('/manage-doctors');
+  } catch (error) {
+    console.error('Error adding doctor:', error);
+    res.status(500).send('Error adding doctor: ' + error.message);
+  }
+});
+
+router.post('/delete-doctor/:id', verifyUser, requireRole('admin'), async (req, res) => {
+  try {
+    const doctorId = req.params.id;
+    
+    // Delete from Firestore
+    await db.collection('users').doc(doctorId).delete();
+    
+    // Delete from Firebase Auth
+    await admin.auth().deleteUser(doctorId);
+    
+    res.redirect('/manage-doctors');
+  } catch (error) {
+    console.error('Error deleting doctor:', error);
+    res.status(500).send('Error deleting doctor');
+  }
+});
+
+router.get('/manage-patients', verifyUser, requireRole('admin'), async (req, res) => {
+  try {
+    const patientsSnapshot = await db.collection('patients').get();
+    const patients = patientsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    res.render('manage_patients', { user: req.user, patients });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Error loading patients');
+  }
+});
+
+// Delete patient record
+router.post('/delete-patient/:id', verifyUser, requireRole('admin'), async (req, res) => {
+  try {
+    await db.collection('patients').doc(req.params.id).delete();
+    res.redirect('/manage-patients');
+  } catch (error) {
+    console.error('Error deleting patient:', error);
+    res.status(500).send('Error deleting patient');
+  }
+});
 // ========== DOCTOR DASHBOARD ==========
 router.get('/doctor-dashboard', verifyUser, requireRole('doctor'), async (req, res) => {
   try {
