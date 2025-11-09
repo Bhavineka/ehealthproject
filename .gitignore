@@ -1,0 +1,27 @@
+# Node / JavaScript dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Firebase / Google Cloud service account keys
+ehealthcloudproject/firebase-key.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# IDE / editor settings
+.vscode/
+.idea/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build / output directories
+dist/
+build/

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard | eHealth Cloud</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/auth.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome, <%= user.email %> 👋</h1>
+    <nav>
+      <a href="/add-patient">➕ Add Patient</a>
+      <button onclick="logout()">Logout</button>
+    </nav>
+    <hr>
+
+    <h2>Patients List</h2>
+    <ul>
+      <% if (patients.length > 0) { %>
+        <% patients.forEach(p => { %>
+          <li>
+            <a href="/patient/<%= p.id %>"><%= p.name %> (Age: <%= p.age %>)</a>
+          </li>
+        <% }) %>
+      <% } else { %>
+        <p>No patients added yet.</p>
+      <% } %>
+    </ul>
+  </div>
+</body>
+</html>

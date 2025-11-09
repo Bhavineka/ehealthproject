@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Patient Details | eHealth Cloud</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1><%= patient.name %></h1>
+    <p><strong>Age:</strong> <%= patient.age %></p>
+    <p><strong>Condition:</strong> <%= patient.condition %></p>
+    <p><strong>Encrypted Notes:</strong> <%= patient.notesEncrypted %></p>
+    <a href="/dashboard">⬅ Back</a>
+  </div>
+</body>
+</html>

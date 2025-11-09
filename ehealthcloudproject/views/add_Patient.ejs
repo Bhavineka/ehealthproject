@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add Patient | eHealth Cloud</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <script src="/js/encrypt.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Add New Patient</h1>
+    <form method="POST" action="/add-patient" onsubmit="encryptBeforeSubmit()">
+      <input type="text" name="name" placeholder="Patient Name" required>
+      <input type="number" name="age" placeholder="Age" required>
+      <input type="text" name="condition" placeholder="Condition" required>
+      <textarea id="notes" placeholder="Medical Notes"></textarea>
+      <input type="hidden" name="notesEncrypted" id="notesEncrypted">
+      <button type="submit">Save</button>
+    </form>
+    <a href="/dashboard">⬅ Back to Dashboard</a>
+  </div>
+</body>
+</html>
