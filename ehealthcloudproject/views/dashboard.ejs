@@ -3,7 +3,6 @@
 <head>
   <title>Dashboard | eHealth Cloud</title>
   <link rel="stylesheet" href="/css/style.css">
-  <script src="/js/auth.js"></script>
 </head>
 <body>
   <div class="container">
@@ -27,5 +26,15 @@
       <% } %>
     </ul>
   </div>
+
+  <!-- Load Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  
+  <!-- Load config BEFORE auth.js -->
+  <script src="/js/firebase-client-config.js"></script>
+  
+  <!-- Load auth.js LAST -->
+  <script src="/js/auth.js"></script>
 </body>
 </html>

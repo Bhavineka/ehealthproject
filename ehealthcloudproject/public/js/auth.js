@@ -1,28 +1,30 @@
 // auth.js - Firebase Authentication functions
 
-// 1️⃣ Initialize Firebase
+// Initialize Firebase immediately when this script loads
+// By this time, firebase SDK and firebaseConfig are already loaded
 firebase.initializeApp(firebaseConfig);
-
-// 2️⃣ Initialize auth (must be **before** any function)
 const auth = firebase.auth();
 
+
+setTimeout(() => {
+  try {
+    if (!firebase.apps || firebase.apps.length === 0) {
+      firebase.initializeApp(firebaseConfig);
+      console.log('✅ Firebase initialized');
+    }
+  } catch (error) {
+    console.error('Firebase init error:', error);
+  }
+}, 100);
 /**
  * Sign up a new user
- * @param {string} email 
- * @param {string} password 
- * @param {string} name 
  */
 async function signup(email, password, name) {
   try {
     const userCred = await auth.createUserWithEmailAndPassword(email, password);
-
-    // Update display name
     await userCred.user.updateProfile({ displayName: name });
-
-    // Optional: save session token in cookie
     const token = await userCred.user.getIdToken();
     document.cookie = `__session=${token}; path=/`;
-
     alert('Account created successfully!');
     window.location.href = '/dashboard';
   } catch (error) {
@@ -33,17 +35,12 @@ async function signup(email, password, name) {
 
 /**
  * Login existing user
- * @param {string} email 
- * @param {string} password 
  */
 async function login(email, password) {
   try {
     const userCred = await auth.signInWithEmailAndPassword(email, password);
-
-    // Save session token in cookie
     const token = await userCred.user.getIdToken();
     document.cookie = `__session=${token}; path=/`;
-
     alert('Login successful!');
     window.location.href = '/dashboard';
   } catch (error) {
@@ -67,12 +64,10 @@ async function logout() {
 }
 
 /**
- * Optional: monitor auth state
- * Redirect to login if user is not authenticated
+ * Monitor auth state
  */
 auth.onAuthStateChanged(user => {
   if (!user) {
-    // Not logged in, redirect unless on login/signup page
     if (!window.location.pathname.includes('/login') &&
         !window.location.pathname.includes('/signup')) {
       window.location.href = '/login';
