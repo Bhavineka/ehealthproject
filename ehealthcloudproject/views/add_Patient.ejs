@@ -5,16 +5,128 @@
   <link rel="stylesheet" href="/css/style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script src="/js/encrypt.js"></script>
+  <style>
+    .record-type-selector {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .record-option {
+      border: 2px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .record-option:hover {
+      border-color: var(--primary);
+      background: rgba(37, 99, 235, 0.05);
+    }
+    
+    .record-option.selected {
+      border-color: var(--primary);
+      background: rgba(37, 99, 235, 0.1);
+    }
+    
+    .record-option .icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+    
+    .record-option .label {
+      font-weight: 600;
+      color: var(--gray-900);
+      font-size: 13px;
+    }
+    
+    .record-input-container {
+      display: none;
+      margin-top: 12px;
+    }
+    
+    .record-input-container.active {
+      display: block;
+    }
+
+    .file-upload-area {
+      border: 2px dashed var(--gray-200);
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--gray-50);
+    }
+
+    .file-upload-area:hover {
+      border-color: var(--primary);
+      background: rgba(37, 99, 235, 0.05);
+    }
+
+    .file-upload-area.dragover {
+      border-color: var(--primary);
+      background: rgba(37, 99, 235, 0.1);
+    }
+
+    .file-preview {
+      margin-top: 16px;
+      padding: 12px;
+      background: white;
+      border: 2px solid var(--success);
+      border-radius: 8px;
+      display: none;
+    }
+
+    .file-preview.show {
+      display: block;
+    }
+
+    .file-preview-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .file-icon {
+      font-size: 32px;
+    }
+
+    .file-info {
+      flex: 1;
+    }
+
+    .file-name {
+      font-weight: 600;
+      color: var(--gray-900);
+      margin-bottom: 4px;
+    }
+
+    .file-size {
+      font-size: 12px;
+      color: var(--gray-700);
+    }
+
+    .preview-image {
+      max-width: 100%;
+      max-height: 200px;
+      margin-top: 12px;
+      border-radius: 8px;
+    }
+  </style>
 </head>
 <body>
   <div class="auth-container">
-    <div class="auth-card" style="max-width: 600px;">
+    <div class="auth-card" style="max-width: 700px;">
       <div class="logo">
         <h1>➕ Add New Patient</h1>
         <p>Enter patient information below</p>
       </div>
       
-      <form method="POST" action="/add-patient" onsubmit="encryptBeforeSubmit()">
+      <form method="POST" action="/add-patient" enctype="multipart/form-data" onsubmit="return handleSubmit(event)">
         <div class="form-group">
           <label for="name">Patient Name *</label>
           <input type="text" name="name" id="name" placeholder="Enter patient's full name" required>
@@ -36,11 +148,236 @@
           <input type="hidden" name="notesEncrypted" id="notesEncrypted">
           <small style="color: var(--gray-700); font-size: 12px;">🔒 Notes will be encrypted before saving</small>
         </div>
+
+        <div class="form-group">
+          <label>Medical Records (Optional)</label>
+          <div class="record-type-selector">
+            <div class="record-option" data-type="pdf">
+              <div class="icon">📄</div>
+              <div class="label">Upload PDF</div>
+            </div>
+            <div class="record-option" data-type="image">
+              <div class="icon">📷</div>
+              <div class="label">Upload Image</div>
+            </div>
+            <div class="record-option" data-type="url">
+              <div class="icon">🔗</div>
+              <div class="label">Enter URL</div>
+            </div>
+          </div>
+          
+          <!-- File Upload Area -->
+          <div id="fileUploadContainer" class="record-input-container">
+            <div class="file-upload-area" id="fileUploadArea" onclick="document.getElementById('fileInput').click()">
+              <div style="font-size: 48px; margin-bottom: 12px;">📁</div>
+              <div style="font-weight: 600; color: var(--gray-900); margin-bottom: 4px;">
+                Click to upload or drag and drop
+              </div>
+              <div style="font-size: 12px; color: var(--gray-700);">
+                <span id="fileTypeHint">PDF, PNG, JPG or JPEG (MAX. 10MB)</span>
+              </div>
+            </div>
+            <input type="file" id="fileInput" name="medicalFile" accept="" style="display: none;">
+            
+            <div id="filePreview" class="file-preview">
+              <div class="file-preview-content">
+                <div class="file-icon" id="previewIcon">📄</div>
+                <div class="file-info">
+                  <div class="file-name" id="fileName"></div>
+                  <div class="file-size" id="fileSize"></div>
+                </div>
+                <button type="button" onclick="removeFile()" class="btn btn-danger" style="width: auto; padding: 8px 16px; margin: 0;">
+                  Remove
+                </button>
+              </div>
+              <img id="imagePreview" class="preview-image" style="display: none;">
+            </div>
+          </div>
+
+          <!-- URL Input Area -->
+          <div id="urlInputContainer" class="record-input-container">
+            <input type="text" name="recordUrl" id="recordUrl" placeholder="Enter URL to PDF, image, or document..." style="width: 100%; padding: 12px; border: 2px solid var(--gray-200); border-radius: 8px;">
+            <small style="color: var(--gray-700); font-size: 12px; display: block; margin-top: 8px;">
+              💡 Enter a direct link to the medical record
+            </small>
+          </div>
+
+          <input type="hidden" name="recordType" id="recordType">
+        </div>
         
-        <button type="submit" class="btn btn-primary">Save Patient Record</button>
+        <button type="submit" class="btn btn-primary" id="submitBtn">Save Patient Record</button>
         <a href="/dashboard" class="btn btn-secondary" style="margin-top: 8px;">Cancel</a>
       </form>
     </div>
   </div>
+
+  <script>
+    let selectedRecordType = '';
+    let selectedFile = null;
+
+    // Record type selection
+    document.querySelectorAll('.record-option').forEach(option => {
+      option.addEventListener('click', function() {
+        const wasSelected = this.classList.contains('selected');
+        
+        // Deselect all options
+        document.querySelectorAll('.record-option').forEach(o => o.classList.remove('selected'));
+        
+        // Hide all containers
+        document.getElementById('fileUploadContainer').classList.remove('active');
+        document.getElementById('urlInputContainer').classList.remove('active');
+        
+        if (!wasSelected) {
+          // Select this option
+          this.classList.add('selected');
+          selectedRecordType = this.dataset.type;
+          document.getElementById('recordType').value = selectedRecordType;
+          
+          if (selectedRecordType === 'url') {
+            document.getElementById('urlInputContainer').classList.add('active');
+          } else {
+            document.getElementById('fileUploadContainer').classList.add('active');
+            updateFileUploadAccept(selectedRecordType);
+          }
+        } else {
+          // Deselect
+          selectedRecordType = '';
+          document.getElementById('recordType').value = '';
+          removeFile();
+          document.getElementById('recordUrl').value = '';
+        }
+      });
+    });
+
+    // Update file input accept attribute based on type
+    function updateFileUploadAccept(type) {
+      const fileInput = document.getElementById('fileInput');
+      const fileTypeHint = document.getElementById('fileTypeHint');
+      
+      if (type === 'pdf') {
+        fileInput.accept = '.pdf,application/pdf';
+        fileTypeHint.textContent = 'PDF files only (MAX. 10MB)';
+      } else if (type === 'image') {
+        fileInput.accept = 'image/png,image/jpeg,image/jpg';
+        fileTypeHint.textContent = 'PNG, JPG or JPEG (MAX. 10MB)';
+      }
+    }
+
+    // File input change handler
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        handleFileSelect(file);
+      }
+    });
+
+    // Drag and drop handlers
+    const uploadArea = document.getElementById('fileUploadArea');
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      uploadArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      uploadArea.addEventListener(eventName, () => {
+        uploadArea.classList.add('dragover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      uploadArea.addEventListener(eventName, () => {
+        uploadArea.classList.remove('dragover');
+      });
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+      const dt = e.dataTransfer;
+      const file = dt.files[0];
+      if (file) {
+        handleFileSelect(file);
+      }
+    });
+
+    // Handle file selection
+    function handleFileSelect(file) {
+      // Validate file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB');
+        return;
+      }
+
+      // Validate file type
+      if (selectedRecordType === 'pdf' && file.type !== 'application/pdf') {
+        alert('Please select a PDF file');
+        return;
+      } else if (selectedRecordType === 'image' && !file.type.startsWith('image/')) {
+        alert('Please select an image file (PNG, JPG, or JPEG)');
+        return;
+      }
+
+      selectedFile = file;
+      
+      // Show file preview
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = formatFileSize(file.size);
+      
+      if (file.type.startsWith('image/')) {
+        document.getElementById('previewIcon').textContent = '📷';
+        
+        // Show image preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const imgPreview = document.getElementById('imagePreview');
+          imgPreview.src = e.target.result;
+          imgPreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        document.getElementById('previewIcon').textContent = '📄';
+        document.getElementById('imagePreview').style.display = 'none';
+      }
+      
+      document.getElementById('filePreview').classList.add('show');
+    }
+
+    // Remove file
+    function removeFile() {
+      selectedFile = null;
+      document.getElementById('fileInput').value = '';
+      document.getElementById('filePreview').classList.remove('show');
+      document.getElementById('imagePreview').style.display = 'none';
+    }
+
+    // Format file size
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    // Handle form submission
+    function handleSubmit(event) {
+      // Encrypt notes before submission
+      encryptBeforeSubmit();
+      
+      // If file upload is selected but no file chosen, show error
+      if ((selectedRecordType === 'pdf' || selectedRecordType === 'image') && !selectedFile) {
+        alert('Please select a file to upload');
+        event.preventDefault();
+        return false;
+      }
+      
+      // If URL is selected but no URL entered, that's okay (it's optional)
+      
+      return true;
+    }
+  </script>
 </body>
 </html>

@@ -3,14 +3,167 @@
 <head>
   <title>Patient Details | eHealth Cloud</title>
   <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <script src="/js/encrypt.js"></script>
+  <style>
+    .detail-card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .detail-row {
+      display: flex;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { font-weight: 600; color: var(--gray-700); width: 200px; flex-shrink: 0; }
+    .detail-value { color: var(--gray-900); flex: 1; }
+
+    .pdf-preview, .file-viewer {
+      margin-top: 16px;
+      border: 2px solid var(--gray-200);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .pdf-preview img, .file-viewer iframe {
+      width: 100%;
+      height: 600px;
+      display: block;
+      border: none;
+    }
+
+    .pdf-link-box {
+      background: var(--gray-50);
+      padding: 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .decrypt-section {
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--gray-50);
+      border-radius: 8px;
+    }
+
+    .decrypted-notes {
+      margin-top: 12px;
+      padding: 16px;
+      background: white;
+      border: 2px solid var(--success);
+      border-radius: 8px;
+      display: none;
+    }
+
+    .decrypted-notes.show { display: block; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1><%= patient.name %></h1>
-    <p><strong>Age:</strong> <%= patient.age %></p>
-    <p><strong>Condition:</strong> <%= patient.condition %></p>
-    <p><strong>Encrypted Notes:</strong> <%= patient.notesEncrypted %></p>
-    <a href="/dashboard">⬅ Back</a>
+  <div class="auth-container" style="align-items: flex-start; padding-top: 40px;">
+    <div class="auth-card" style="max-width: 900px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+        <div class="logo" style="margin: 0;">
+          <h1>Patient Details</h1>
+          <p>Complete medical record information</p>
+        </div>
+        <a href="<% if (user.role === 'doctor') { %>/my-patients<% } else { %>/dashboard<% } %>" 
+           class="btn btn-secondary" style="width: auto; padding: 10px 20px;">⬅ Back</a>
+      </div>
+
+      <!-- Patient Info -->
+      <div class="detail-card">
+        <h2>👤 Patient Information</h2>
+        <div class="detail-row"><div class="detail-label">Full Name:</div><div class="detail-value"><strong><%= patient.name %></strong></div></div>
+        <div class="detail-row"><div class="detail-label">Age:</div><div class="detail-value"><%= patient.age %> years old</div></div>
+        <div class="detail-row"><div class="detail-label">Medical Condition:</div><div class="detail-value"><span class="badge badge-patient"><%= patient.condition %></span></div></div>
+        <div class="detail-row"><div class="detail-label">Added By:</div><div class="detail-value"><%= patient.addedByName || 'Unknown' %> <span class="badge <%= patient.addedByRole === 'admin' ? 'badge-admin' : 'badge-doctor' %>"><%= patient.addedByRole ? patient.addedByRole.toUpperCase() : 'N/A' %></span></div></div>
+        <div class="detail-row"><div class="detail-label">Created:</div><div class="detail-value"><%= patient.createdAt ? new Date(patient.createdAt.toDate()).toLocaleString() : 'N/A' %></div></div>
+      </div>
+
+      <!-- Medical Record File / Image / PDF -->
+      <% if (patient.recordData || patient.recordUrl) { %>
+        <div class="detail-card">
+          <h2>📋 Medical Record</h2>
+
+          <% if (patient.recordType === 'image') { %>
+            <div class="pdf-preview">
+              <img src="<%= patient.recordData %>" alt="Medical Record Image">
+            </div>
+          <% } else if (patient.recordType === 'pdf') { %>
+            <div class="file-viewer">
+              <iframe src="<%= patient.recordData %>"></iframe>
+            </div>
+          <% } else if (patient.recordType === 'url') { %>
+            <div class="pdf-link-box">
+              <div>🔗</div>
+              <div style="flex:1">
+                <strong>External Medical Record Link</strong>
+                <p style="font-size:13px; word-break: break-all;"><%= patient.recordUrl %></p>
+              </div>
+              <a href="<%= patient.recordUrl %>" target="_blank" class="btn btn-primary">Open</a>
+            </div>
+          <% } %>
+        </div>
+      <% } %>
+
+      <!-- Encrypted Notes -->
+      <% if (patient.notesEncrypted) { %>
+        <div class="detail-card">
+          <h2>🔒 Encrypted Medical Notes</h2>
+          <div class="decrypt-section">
+            <input type="password" id="passphrase" placeholder="Enter passphrase (e.g. demoKey123)" style="flex: 1; padding: 10px; border: 2px solid var(--gray-200); border-radius: 8px;">
+            <button onclick="decryptNotesNow()" class="btn btn-success" style="margin-left:8px;">Decrypt</button>
+            <div id="decryptedNotes" class="decrypted-notes">
+              <div><strong>✅ Decrypted Successfully</strong></div>
+              <div id="decryptedContent" style="white-space: pre-wrap; margin-top:8px;"></div>
+            </div>
+            <div id="decryptError" style="display:none; margin-top:12px; padding:12px; background:rgba(239,68,68,0.1); color:var(--danger); border-radius:8px;">
+              ❌ Decryption failed. Please check your passphrase.
+            </div>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="detail-card">
+          <div style="text-align:center; padding:40px; color:var(--gray-700);">
+            📝 No medical notes available
+          </div>
+        </div>
+      <% } %>
+    </div>
   </div>
+
+  <script>
+    function decryptNotesNow() {
+      const passphrase = document.getElementById('passphrase').value;
+      const encryptedData = '<%= patient.notesEncrypted %>';
+      if (!passphrase) return alert('Please enter a passphrase');
+
+      try {
+        const decrypted = decryptNotes(encryptedData, passphrase);
+        if (decrypted) {
+          document.getElementById('decryptedContent').textContent = decrypted;
+          document.getElementById('decryptedNotes').classList.add('show');
+          document.getElementById('decryptError').style.display = 'none';
+        } else {
+          document.getElementById('decryptedNotes').classList.remove('show');
+          document.getElementById('decryptError').style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Decryption error:', error);
+        document.getElementById('decryptedNotes').classList.remove('show');
+        document.getElementById('decryptError').style.display = 'block';
+      }
+    }
+
+    document.getElementById('passphrase')?.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') decryptNotesNow();
+    });
+  </script>
 </body>
 </html>

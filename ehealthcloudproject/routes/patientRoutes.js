@@ -1,6 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const { db, admin } = require('../config/firebase');
+const multer = require('multer');
+const path = require('path');
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF and images are allowed.'));
+    }
+  }
+});
 
 // Middleware to verify Firebase ID token and get user role
 async function verifyUser(req, res, next) {
@@ -208,9 +227,9 @@ router.get('/add-patient', verifyUser, requireRole('doctor', 'admin'), (req, res
   res.render('add_patient', { user: req.user });
 });
 
-router.post('/add-patient', verifyUser, requireRole('doctor', 'admin'), async (req, res) => {
+router.post('/add-patient', verifyUser, requireRole('doctor', 'admin'), upload.single('medicalFile'), async (req, res) => {
   try {
-    const { name, age, condition, notesEncrypted, pdfLink, pdfType } = req.body;
+    const { name, age, condition, notesEncrypted, recordUrl, recordType } = req.body;
     
     if (!name || !age || !condition) {
       return res.status(400).send('Missing required fields');
@@ -227,10 +246,24 @@ router.post('/add-patient', verifyUser, requireRole('doctor', 'admin'), async (r
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    // Add PDF information if provided
-    if (pdfLink && pdfLink.trim()) {
-      patientData.pdfLink = pdfLink.trim();
-      patientData.pdfType = pdfType || 'link';
+    // Handle file upload or URL
+    if (recordType) {
+      if (recordType === 'url' && recordUrl && recordUrl.trim()) {
+        // URL provided
+        patientData.recordUrl = recordUrl.trim();
+        patientData.recordType = 'url';
+      } else if ((recordType === 'pdf' || recordType === 'image') && req.file) {
+        // File uploaded - convert to base64
+        const fileBuffer = req.file.buffer;
+        const base64File = fileBuffer.toString('base64');
+        const mimeType = req.file.mimetype;
+        
+        // Store as data URL
+        patientData.recordData = `data:${mimeType};base64,${base64File}`;
+        patientData.recordType = recordType;
+        patientData.recordFileName = req.file.originalname;
+        patientData.recordFileSize = req.file.size;
+      }
     }
     
     await db.collection('patients').add(patientData);
@@ -238,7 +271,7 @@ router.post('/add-patient', verifyUser, requireRole('doctor', 'admin'), async (r
     res.redirect('/dashboard');
   } catch (error) {
     console.error('Error adding patient:', error);
-    res.status(500).send('Error adding patient');
+    res.status(500).send('Error adding patient: ' + error.message);
   }
 });
 

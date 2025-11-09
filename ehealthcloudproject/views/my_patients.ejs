@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Doctor Dashboard | eHealth Cloud</title>
+  <title>My Patients | eHealth Cloud</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -14,11 +14,11 @@
       </div>
       
       <nav class="sidebar-nav">
-        <a href="/doctor-dashboard" class="nav-item active">
+        <a href="/doctor-dashboard" class="nav-item">
           <span class="icon">📊</span>
           <span>Dashboard</span>
         </a>
-        <a href="/my-patients" class="nav-item">
+        <a href="/my-patients" class="nav-item active">
           <span class="icon">👥</span>
           <span>My Patients</span>
         </a>
@@ -36,7 +36,7 @@
     <!-- Main Content -->
     <div class="main-content">
       <div class="top-bar">
-        <h1>Doctor Dashboard</h1>
+        <h1>My Patients</h1>
         <div class="user-info">
           <div class="user-avatar"><%= user.name.charAt(0).toUpperCase() %></div>
           <div>
@@ -50,34 +50,27 @@
       <div class="stats-grid">
         <div class="stat-card blue">
           <div class="stat-icon">👥</div>
-          <h3>My Patients</h3>
+          <h3>Total Patients</h3>
           <div class="stat-value"><%= patients.length %></div>
         </div>
         
         <div class="stat-card green">
           <div class="stat-icon">📋</div>
-          <h3>With PDF Records</h3>
+          <h3>With Medical Records</h3>
           <div class="stat-value"><%= patients.filter(p => p.pdfLink).length %></div>
         </div>
         
         <div class="stat-card orange">
-          <div class="stat-icon">⏰</div>
-          <h3>Added This Week</h3>
-          <div class="stat-value">
-            <%= patients.filter(p => {
-              if (!p.createdAt) return false;
-              const weekAgo = new Date();
-              weekAgo.setDate(weekAgo.getDate() - 7);
-              return p.createdAt.toDate() > weekAgo;
-            }).length %>
-          </div>
+          <div class="stat-icon">📝</div>
+          <h3>With Encrypted Notes</h3>
+          <div class="stat-value"><%= patients.filter(p => p.notesEncrypted).length %></div>
         </div>
       </div>
 
-      <!-- Patients Table -->
+      <!-- Patients List -->
       <div class="content-card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h2 style="margin: 0;">Recent Patient Records</h2>
+          <h2 style="margin: 0;">Patient List</h2>
           <a href="/add-patient" class="btn btn-success">+ Add New Patient</a>
         </div>
         
@@ -88,54 +81,64 @@
                 <th>Patient Name</th>
                 <th>Age</th>
                 <th>Condition</th>
-                <th>PDF Record</th>
+                <th>Medical Records</th>
+                <th>Notes</th>
                 <th>Added On</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              <% patients.slice(0, 10).forEach(p => { %>
+              <% patients.forEach(p => { %>
                 <tr>
                   <td><strong><%= p.name %></strong></td>
-                  <td><%= p.age %></td>
+                  <td><%= p.age %> years</td>
                   <td><%= p.condition %></td>
                   <td>
                     <% if (p.pdfLink) { %>
                       <% if (p.pdfType === 'link') { %>
-                        <span style="color: var(--primary);">🔗 Link</span>
+                        <a href="<%= p.pdfLink %>" target="_blank" style="color: var(--primary); text-decoration: none;">
+                          🔗 View Link
+                        </a>
                       <% } else if (p.pdfType === 'image') { %>
-                        <span style="color: var(--success);">📷 Image</span>
+                        <a href="<%= p.pdfLink %>" target="_blank" style="color: var(--success); text-decoration: none;">
+                          📷 View Image
+                        </a>
                       <% } else if (p.pdfType === 'document') { %>
-                        <span style="color: var(--warning);">📄 Document</span>
+                        <a href="<%= p.pdfLink %>" target="_blank" style="color: var(--warning); text-decoration: none;">
+                          📄 View Document
+                        </a>
                       <% } else { %>
-                        <span style="color: var(--primary);">📎 Available</span>
+                        <a href="<%= p.pdfLink %>" target="_blank" style="color: var(--primary); text-decoration: none;">
+                          📎 View File
+                        </a>
                       <% } %>
+                    <% } else { %>
+                      <span style="color: var(--gray-700);">No records</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (p.notesEncrypted) { %>
+                      <span style="color: var(--success);">🔒 Encrypted</span>
                     <% } else { %>
                       <span style="color: var(--gray-700);">—</span>
                     <% } %>
                   </td>
                   <td><%= p.createdAt ? new Date(p.createdAt.toDate()).toLocaleDateString() : 'N/A' %></td>
                   <td>
-                    <a href="/patient/<%= p.id %>" class="btn btn-secondary" style="padding: 6px 16px; display: inline-block;">View Details</a>
+                    <a href="/patient/<%= p.id %>" class="btn btn-secondary" style="padding: 6px 16px; display: inline-block;">
+                      View Full Details
+                    </a>
                   </td>
                 </tr>
               <% }) %>
             </tbody>
           </table>
-          
-          <% if (patients.length > 10) { %>
-            <div style="text-align: center; margin-top: 20px;">
-              <a href="/my-patients" class="btn btn-primary" style="width: auto; padding: 12px 32px;">
-                View All <%= patients.length %> Patients
-              </a>
-            </div>
-          <% } %>
         <% } else { %>
           <div style="text-align: center; padding: 60px 20px;">
-            <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
-            <h3 style="color: var(--gray-700); margin-bottom: 8px;">No patients yet</h3>
-            <p style="color: var(--gray-700); margin-bottom: 24px;">Start by adding your first patient record</p>
-            <a href="/add-patient" class="btn btn-primary" style="width: auto; padding: 12px 32px;">Add Patient</a>
+            <div style="font-size: 48px; margin-bottom: 16px;">👥</div>
+            <h3 style="color: var(--gray-700); margin-bottom: 8px;">No patients added yet</h3>
+            <p style="color: var(--gray-700); margin-bottom: 24px;">You haven't added any patients to your list</p>
+            <a href="/add-patient" class="btn btn-primary" style="width: auto; padding: 12px 32px;">Add Your First Patient</a>
           </div>
         <% } %>
       </div>
