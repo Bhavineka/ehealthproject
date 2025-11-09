@@ -1,30 +1,31 @@
-// auth.js - Firebase Authentication functions
+// auth.js - Firebase Authentication with Role Management
 
-// Initialize Firebase immediately when this script loads
-// By this time, firebase SDK and firebaseConfig are already loaded
-firebase.initializeApp(firebaseConfig);
+// Initialize Firebase ONCE
+if (!firebase.apps || firebase.apps.length === 0) {
+  firebase.initializeApp(firebaseConfig);
+}
 const auth = firebase.auth();
+const db = firebase.firestore();
 
-
-setTimeout(() => {
-  try {
-    if (!firebase.apps || firebase.apps.length === 0) {
-      firebase.initializeApp(firebaseConfig);
-      console.log('✅ Firebase initialized');
-    }
-  } catch (error) {
-    console.error('Firebase init error:', error);
-  }
-}, 100);
 /**
- * Sign up a new user
+ * Sign up a new user with role
  */
-async function signup(email, password, name) {
+async function signup(email, password, name, role) {
   try {
     const userCred = await auth.createUserWithEmailAndPassword(email, password);
     await userCred.user.updateProfile({ displayName: name });
+    
+    // Save user role in Firestore
+    await db.collection('users').doc(userCred.user.uid).set({
+      name: name,
+      email: email,
+      role: role,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
     const token = await userCred.user.getIdToken();
     document.cookie = `__session=${token}; path=/`;
+    
     alert('Account created successfully!');
     window.location.href = '/dashboard';
   } catch (error) {
@@ -41,6 +42,7 @@ async function login(email, password) {
     const userCred = await auth.signInWithEmailAndPassword(email, password);
     const token = await userCred.user.getIdToken();
     document.cookie = `__session=${token}; path=/`;
+    
     alert('Login successful!');
     window.location.href = '/dashboard';
   } catch (error) {
@@ -62,15 +64,3 @@ async function logout() {
     alert('Error logging out. Please try again.');
   }
 }
-
-/**
- * Monitor auth state
- */
-auth.onAuthStateChanged(user => {
-  if (!user) {
-    if (!window.location.pathname.includes('/login') &&
-        !window.location.pathname.includes('/signup')) {
-      window.location.href = '/login';
-    }
-  }
-});

@@ -1,38 +1,198 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Signup | eHealth Cloud</title>
+  <title>Sign Up | eHealth Cloud</title>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .role-selector {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .role-option {
+      border: 2px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 20px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .role-option:hover {
+      border-color: var(--primary);
+      background: rgba(37, 99, 235, 0.05);
+    }
+    
+    .role-option.selected {
+      border-color: var(--primary);
+      background: rgba(37, 99, 235, 0.1);
+    }
+    
+    .role-option .role-icon {
+      font-size: 36px;
+      margin-bottom: 8px;
+    }
+    
+    .role-option .role-name {
+      font-weight: 600;
+      color: var(--gray-900);
+      font-size: 14px;
+    }
+    
+    .role-option .role-desc {
+      font-size: 12px;
+      color: var(--gray-700);
+      margin-top: 4px;
+    }
+    
+    .password-strength {
+      margin-top: 8px;
+      font-size: 12px;
+    }
+    
+    .strength-bar {
+      height: 4px;
+      background: var(--gray-200);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    
+    .strength-fill {
+      height: 100%;
+      width: 0%;
+      transition: all 0.3s;
+    }
+    
+    .strength-weak { background: var(--danger); width: 33%; }
+    .strength-medium { background: var(--warning); width: 66%; }
+    .strength-strong { background: var(--success); width: 100%; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Create an Account</h1>
-    <form id="signupForm">
-      <input type="text" id="name" placeholder="Full Name" required>
-      <input type="email" id="email" placeholder="Email" required>
-      <input type="password" id="password" placeholder="Password" required>
-      <button type="submit">Sign Up</button>
-    </form>
-    <p>Already have an account? <a href="/login">Login</a></p>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="logo">
+        <h1>🏥 eHealth Cloud</h1>
+        <p>Create Your Account</p>
+      </div>
+      
+      <form id="signupForm">
+        <div class="form-group">
+          <label for="name">Full Name *</label>
+          <input type="text" id="name" placeholder="Enter your full name" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="email">Email Address *</label>
+          <input type="email" id="email" placeholder="Enter your email" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password *</label>
+          <input type="password" id="password" placeholder="Create a strong password" required minlength="6">
+          <div class="password-strength">
+            <div id="strengthText" style="color: var(--gray-700);">Password strength</div>
+            <div class="strength-bar">
+              <div id="strengthBar" class="strength-fill"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>Select Your Role *</label>
+          <div class="role-selector">
+            <div class="role-option" data-role="patient">
+              <div class="role-icon">👤</div>
+              <div class="role-name">Patient</div>
+              <div class="role-desc">View records</div>
+            </div>
+            <div class="role-option" data-role="doctor">
+              <div class="role-icon">👨‍⚕️</div>
+              <div class="role-name">Doctor</div>
+              <div class="role-desc">Add patients</div>
+            </div>
+            <div class="role-option" data-role="admin">
+              <div class="role-icon">👨‍💼</div>
+              <div class="role-name">Admin</div>
+              <div class="role-desc">Full control</div>
+            </div>
+          </div>
+          <input type="hidden" id="role" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Create Account</button>
+      </form>
+      
+      <div class="auth-footer">
+        Already have an account? <a href="/login">Sign In</a>
+      </div>
+    </div>
   </div>
 
-  <!-- Load Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-  
-  <!-- Load config BEFORE auth.js -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="/js/firebase-client-config.js"></script>
-  
-  <!-- Load auth.js LAST -->
   <script src="/js/auth.js"></script>
 
   <script>
+    // Role selection
+    let selectedRole = '';
+    document.querySelectorAll('.role-option').forEach(option => {
+      option.addEventListener('click', function() {
+        document.querySelectorAll('.role-option').forEach(o => o.classList.remove('selected'));
+        this.classList.add('selected');
+        selectedRole = this.dataset.role;
+        document.getElementById('role').value = selectedRole;
+      });
+    });
+    
+    // Password strength checker
+    document.getElementById('password').addEventListener('input', function() {
+      const password = this.value;
+      const strengthBar = document.getElementById('strengthBar');
+      const strengthText = document.getElementById('strengthText');
+      
+      let strength = 0;
+      if (password.length >= 6) strength++;
+      if (password.length >= 10) strength++;
+      if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+      if (/\d/.test(password)) strength++;
+      if (/[^a-zA-Z0-9]/.test(password)) strength++;
+      
+      strengthBar.className = 'strength-fill';
+      if (strength <= 2) {
+        strengthBar.classList.add('strength-weak');
+        strengthText.textContent = 'Weak password';
+        strengthText.style.color = 'var(--danger)';
+      } else if (strength <= 3) {
+        strengthBar.classList.add('strength-medium');
+        strengthText.textContent = 'Medium strength';
+        strengthText.style.color = 'var(--warning)';
+      } else {
+        strengthBar.classList.add('strength-strong');
+        strengthText.textContent = 'Strong password';
+        strengthText.style.color = 'var(--success)';
+      }
+    });
+    
+    // Form submission
     document.getElementById('signupForm').onsubmit = async e => {
       e.preventDefault();
+      
+      if (!selectedRole) {
+        alert('Please select a role');
+        return;
+      }
+      
       await signup(
         document.getElementById('email').value,
         document.getElementById('password').value,
-        document.getElementById('name').value
+        document.getElementById('name').value,
+        selectedRole
       );
     };
   </script>

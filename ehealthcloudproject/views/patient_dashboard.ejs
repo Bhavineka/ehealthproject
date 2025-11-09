@@ -6,7 +6,6 @@
 </head>
 <body>
   <div class="dashboard">
-    <!-- Sidebar -->
     <div class="sidebar">
       <div class="sidebar-header">
         <h2>🏥 eHealth</h2>
@@ -18,11 +17,11 @@
           <span class="icon">📊</span>
           <span>My Dashboard</span>
         </a>
-        <a href="/my-records" class="nav-item">
+        <a href="#" class="nav-item">
           <span class="icon">📋</span>
           <span>Medical Records</span>
         </a>
-        <a href="/appointments" class="nav-item">
+        <a href="#" class="nav-item">
           <span class="icon">📅</span>
           <span>Appointments</span>
         </a>
@@ -33,7 +32,6 @@
       </div>
     </div>
 
-    <!-- Main Content -->
     <div class="main-content">
       <div class="top-bar">
         <h1>My Health Dashboard</h1>
@@ -46,7 +44,6 @@
         </div>
       </div>
 
-      <!-- Stats -->
       <div class="stats-grid">
         <div class="stat-card blue">
           <div class="stat-icon">📋</div>
@@ -67,5 +64,45 @@
         </div>
       </div>
 
-      <!-- Medical Records -->
       <div class="content-card">
+        <h2>My Medical Records</h2>
+        <% if (records.length > 0) { %>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Condition</th>
+                <th>Age at Visit</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% records.forEach(r => { %>
+                <tr>
+                  <td><strong><%= r.condition %></strong></td>
+                  <td><%= r.age %></td>
+                  <td><%= r.createdAt ? new Date(r.createdAt.toDate()).toLocaleDateString() : 'N/A' %></td>
+                  <td>
+                    <a href="/patient/<%= r.id %>" class="btn btn-secondary" style="padding: 6px 16px;">View Details</a>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } else { %>
+          <div style="text-align: center; padding: 60px 20px;">
+            <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
+            <h3 style="color: var(--gray-700); margin-bottom: 8px;">No medical records yet</h3>
+            <p style="color: var(--gray-700);">Your medical records will appear here</p>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="/js/firebase-client-config.js"></script>
+  <script src="/js/auth.js"></script>
+</body>
+</html>

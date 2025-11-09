@@ -7,17 +7,40 @@
   <script src="/js/encrypt.js"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>Add New Patient</h1>
-    <form method="POST" action="/add-patient" onsubmit="encryptBeforeSubmit()">
-      <input type="text" name="name" placeholder="Patient Name" required>
-      <input type="number" name="age" placeholder="Age" required>
-      <input type="text" name="condition" placeholder="Condition" required>
-      <textarea id="notes" placeholder="Medical Notes"></textarea>
-      <input type="hidden" name="notesEncrypted" id="notesEncrypted">
-      <button type="submit">Save</button>
-    </form>
-    <a href="/dashboard">⬅ Back to Dashboard</a>
+  <div class="auth-container">
+    <div class="auth-card" style="max-width: 600px;">
+      <div class="logo">
+        <h1>➕ Add New Patient</h1>
+        <p>Enter patient information below</p>
+      </div>
+      
+      <form method="POST" action="/add-patient" onsubmit="encryptBeforeSubmit()">
+        <div class="form-group">
+          <label for="name">Patient Name *</label>
+          <input type="text" name="name" id="name" placeholder="Enter patient's full name" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="age">Age *</label>
+          <input type="number" name="age" id="age" placeholder="Enter age" required min="0" max="150">
+        </div>
+        
+        <div class="form-group">
+          <label for="condition">Medical Condition *</label>
+          <input type="text" name="condition" id="condition" placeholder="e.g., Diabetes, Hypertension" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="notes">Medical Notes (Optional)</label>
+          <textarea id="notes" placeholder="Enter confidential medical notes..." rows="4" style="resize: vertical;"></textarea>
+          <input type="hidden" name="notesEncrypted" id="notesEncrypted">
+          <small style="color: var(--gray-700); font-size: 12px;">🔒 Notes will be encrypted before saving</small>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Save Patient Record</button>
+        <a href="/dashboard" class="btn btn-secondary" style="margin-top: 8px;">Cancel</a>
+      </form>
+    </div>
   </div>
 </body>
 </html>
